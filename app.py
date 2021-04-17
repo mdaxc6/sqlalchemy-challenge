@@ -63,7 +63,13 @@ def Precipitation():
     # close the session
     session.close()
 
-    return jsonify(results)
+    prcp_data = []
+    for item in results:
+        prcp_dict = {}
+        prcp_dict[item.date] = item.prcp
+        prcp_data.append(prcp_dict)
+
+    return jsonify(prcp_data)
 
 
 @app.route("/api/v1.0/stations")
@@ -104,7 +110,13 @@ def Tobs():
     # close the session
     session.close()
 
-    return jsonify(results)
+    temp_data = []
+    for item in results:
+        temp_dict = {}
+        temp_dict[item.date] = item.tobs
+        temp_data.append(temp_dict)
+
+    return jsonify(temp_data)
 
 
 @app.route("/api/v1.0/<start_date>")
@@ -115,7 +127,12 @@ def AfterDate(start_date):
     try:
         results = session.query(func.min(measurement.tobs), func.max(measurement.tobs), func.avg(measurement.tobs)).filter(measurement.date >= start_date).all()
         session.close()
-        return jsonify(results)
+        summary_data = [{
+            "Low" : results[0][0],
+            "High" : results[0][1],
+            "Avg" : round(results[0][2], 2)
+        }]
+        return jsonify(summary_data)
     except:
         session.close()
         return "Sorry, a record for that date could not be found."
@@ -127,14 +144,20 @@ def DateRange(start_date, end_date):
     session = Session(engine)
     # Query the DB
     try:
-        results = session.query(func.min(measurement.tobs), func.avg(measurement.tobs), func.max(measurement.tobs)).\
+        results = session.query(func.min(measurement.tobs),func.max(measurement.tobs), func.avg(measurement.tobs)).\
             filter(measurement.date >= start_date).\
             filter(measurement.date <= end_date).all()
+        summary_data = [{
+            "Low" : results[0][0],
+            "High" : results[0][1],
+            "Avg" : round(results[0][2], 2)
+        }]
         session.close()
-        return jsonify(results)
+        return jsonify(summary_data)
     except:
         session.close()
         return "Sorry, a record for that date could not be found."
+
 
 if __name__ == '__main__':
     app.run(debug=True)
